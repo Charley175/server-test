@@ -1,0 +1,5 @@
+source "/home/charley/ESP/sources/esp-idf/components/efuse/Kconfig"
+source "/home/charley/ESP/sources/esp-idf/components/esp32/Kconfig"
+source "/home/charley/ESP/sources/esp-idf/components/esp_common/Kconfig"
+source "/home/charley/ESP/sources/esp-idf/components/log/Kconfig"
+source "/home/charley/ESP/sources/esp-idf/components/spi_flash/Kconfig"
