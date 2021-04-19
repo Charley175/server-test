@@ -184,7 +184,7 @@ int threadpool_add_task(void *_pool, void *(*function)(void *arg), void *arg)
 	pool->task_queue[queue_rear].function = function;
 	pool->task_queue[queue_rear].arg = arg;
 
-	printf("cur rear = %d, arg = %d\n", queue_rear, *((int *)pool->task_queue[queue_rear].arg));
+	printf("cur rear = %d, arg = %d, arg addr = %p\n", queue_rear, *((int *)pool->task_queue[queue_rear].arg), pool->task_queue[queue_rear].arg);
 
 	POOL(pool, queue, rear) = (queue_rear + 1) % queue_max_size;  /* 逻辑环  */
 	POOL(pool, queue, size)++;
@@ -356,7 +356,7 @@ static void *threadpool_thread(void *threadpool)
 
 		POOL(pool, queue, front) = (POOL(pool, queue, front) + 1) % POOL(pool, queue, max_size);
 		POOL(pool, queue, size)--;
-
+		printf("front = %d, tail = %d , task = %d\n", POOL(pool, queue, front), POOL(pool, queue, rear), POOL(pool, queue, size));
 
 		//通知可以添加新任务
 		PTHREAD_ERR(pthread_cond_broadcast(&pool->queue_not_full), out);
@@ -369,7 +369,7 @@ static void *threadpool_thread(void *threadpool)
 		POOL(pool, thread, busy_num)++;
 		pthread_mutex_unlock(&pool->busy_thr_num_mutex);
 
-		printf("%lx task start\n", pthread_self());
+		printf("%lx task start, arg addr = %p\n", pthread_self(), task.arg);
 		(*(task.function))(task.arg);
 		printf("%lx task end\n", pthread_self());
 		//任务结束处理

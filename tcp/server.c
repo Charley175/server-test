@@ -7,6 +7,9 @@
 #include <arpa/inet.h>// sockaddr_in
 #include "thread_pool.h"
 #include "errno.h"
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
 
 void *test(void *Arg)
 {
@@ -29,7 +32,19 @@ void *test(void *Arg)
 		write(client_fd, buf, n);
     }
 
+    close(client_fd);
+
     return NULL;
+}
+
+void *pool;
+int fd = -1;
+void Stop(int signo) 
+{
+	threadpool_destroy(pool, FLAGS_WAIT_TASK_EXIT);
+    printf("ccc\n");
+    close(fd);
+    exit(0);
 }
 
 int main (int argc, char ** argv)
@@ -40,17 +55,19 @@ int main (int argc, char ** argv)
         return 0;
     }
 
+    signal(SIGINT, Stop); 
+
     printf("Server Port : %d\n", atoi(argv[1]));
 
     /*IPV4 , TCP, defult protocol*/
-    int fd = socket(AF_INET, SOCK_STREAM, 0);
+     fd = socket(AF_INET, SOCK_STREAM, 0);
     if ( fd < 0 )
     {
         perror("socket");
         exit(1);
     }
 
-	void *pool;
+
 	int rc = threadpool_create(&pool, 1, 10, 20, 100);
 	if (rc < 0) {
 		printf("threadpool_create false\n");
@@ -65,6 +82,9 @@ int main (int argc, char ** argv)
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_port = htons(atoi(argv[1]));  /* 指定端口号 */
 	serv_addr.sin_addr.s_addr = htonl(INADDR_ANY); /* 自动选择可用IP */
+
+    int on = 1;
+    setsockopt( fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on) ); //快速重用
 
 	if ( bind(fd, (struct sockaddr*)&serv_addr, sizeof(serv_addr) ) < 0) {
 		perror("bind");
@@ -90,7 +110,7 @@ int main (int argc, char ** argv)
 		}
 
         inet_ntop(AF_INET, &client_addr, buf, INET_ADDRSTRLEN);
-	    printf("client IP is: %s, client port is: %d\n", buf, ntohs(client_addr.sin_port));
+	    printf("client IP is: %s, client port is: %d, socket_fd addr = %p\n", buf, ntohs(client_addr.sin_port), &clientfd);
 
 		rc = threadpool_add_task(pool, test, (void *)&clientfd);
 		if (rc < 0) {
