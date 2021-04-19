@@ -11,6 +11,8 @@
 
 int j = 100;
 
+
+
 void *do_work(void *a)
 {
 	printf("CCC : %lx : %d\n", pthread_self(),j--);
