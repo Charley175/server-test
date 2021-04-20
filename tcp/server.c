@@ -67,8 +67,7 @@ int main (int argc, char ** argv)
         exit(1);
     }
 
-
-	int rc = threadpool_create(&pool, 1, 10, 20, 100);
+	int rc = threadpool_create(&pool, 1, 10, 100, 1000);
 	if (rc < 0) {
 		printf("threadpool_create false\n");
 		return -1;

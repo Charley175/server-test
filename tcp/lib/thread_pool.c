@@ -144,6 +144,7 @@ int threadpool_destroy(void *_pool, int flags)
 
 	pool->shutdown = true;
 	for (i = 0; i < POOL(pool, thread, live_num); i++)
+	
 		PTHREAD_ERR(pthread_cond_broadcast(&(pool->queue_not_empty)), out);
 
 	threadpool_free(&pool);
@@ -175,19 +176,19 @@ int threadpool_add_task(void *_pool, void *(*function)(void *arg), void *arg)
 		goto out;
 
 	/*清空工作线程的回调函数的参数arg*/
-	if (pool->task_queue[queue_rear].arg) {
-		free(pool->task_queue[queue_rear].arg);
-		pool->task_queue[queue_rear].arg = NULL;
-	}
+	// if (pool->task_queue[queue_rear].arg) {
+	// 	free(pool->task_queue[queue_rear].arg);
+	// 	pool->task_queue[queue_rear].arg = NULL;
+	// }
 
 	/*添加任务到任务队列*/
 	pool->task_queue[queue_rear].function = function;
 	pool->task_queue[queue_rear].arg = arg;
 
-	printf("cur rear = %d, arg = %d, arg addr = %p\n", queue_rear, *((int *)pool->task_queue[queue_rear].arg), pool->task_queue[queue_rear].arg);
-
 	POOL(pool, queue, rear) = (queue_rear + 1) % queue_max_size;  /* 逻辑环  */
 	POOL(pool, queue, size)++;
+
+	printf("cur rear = %d, arg = %d, front = %d\n", POOL(pool, queue, rear), *((int *)pool->task_queue[queue_rear].arg), POOL(pool, queue, front));
 
 	/*添加完任务后,队列就不为空了,唤醒线程池中的一个线程*/
 	PTHREAD_ERR(pthread_cond_signal(&pool->queue_not_empty), out);
@@ -231,8 +232,11 @@ static void *admin_thread(void *threadpool)
 	pthread_detach(pthread_self());
 	struct threadpool *pool = threadpool;
 	while (!pool->shutdown) {
+		sleep(1);
 		if(thread_create(pool) < 0)
 			return NULL;
+		printf("Cur alive thread : %d\n", pool->thread_info.live_num);
+		printf("Cur busy thread : %d", pool->thread_info.busy_num);
 
 		if(thread_destory(pool) < 0)
 			return NULL;
@@ -331,7 +335,7 @@ static void *threadpool_thread(void *threadpool)
 			if (POOL(pool, thread, exit_num) == 0)
 				continue;
 
-			ESLOG_INFO("exit_num:%d\n", POOL(pool, thread, exit_num));
+			printf("exit_num:%d\n", POOL(pool, thread, exit_num));
 			POOL(pool, thread, exit_num)--;
 			//如果live的线程数大于min线程，则销毁掉.
 			if (POOL(pool, thread, live_num) > POOL(pool, thread, min_num)) {
@@ -378,6 +382,7 @@ static void *threadpool_thread(void *threadpool)
 		pthread_mutex_unlock(&pool->busy_thr_num_mutex);
 	}
 out:
+
 	pthread_mutex_unlock(&pool->mutex);
 
 	return NULL;

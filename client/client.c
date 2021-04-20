@@ -37,6 +37,7 @@ int main(int argc, char *argv[]) {
 	if (ret == -1) {
 		error_exit("connect");
 	}
+
 	while(1) {
 		fgets(buf, sizeof(buf), stdin);
 		write(sockfd, buf, strlen(buf));
@@ -44,5 +45,6 @@ int main(int argc, char *argv[]) {
 		write(STDOUT_FILENO, buf, n);
 	}
 	close(sockfd);
+	
 	return 0;
 }
